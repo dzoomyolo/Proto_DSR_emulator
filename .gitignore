@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+build/
+Proto_DSR_sim_Menyashev.spec
