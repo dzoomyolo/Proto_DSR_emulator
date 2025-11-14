@@ -7,13 +7,14 @@ class NetworkTopologyGenerator:
     #Генератор топологии сети
     
     @staticmethod
-    def create_topology(num_nodes: int) -> nx.Graph:
+    def create_topology(num_nodes: int, allow_bridges: bool = False) -> nx.Graph:
         """
         - Работа каждого из узлов реализуется в отдельном потоке;
         - Программа должна иметь возможность визуализации топологии сети и пошаговой визуализации RREQ и RREP запросов;
         - Количество узлов в сети до 50 шт.;
 	    - Отсутствие мостов в графе топологии сети;
 	    - Реберная связность графа не должна превышать (N-1)/2, где N число вершин в графе.
+        - При allow_bridges=False граф не будет содержать мосты (будет пытаться убрать ;3)
         """
         graph = nx.Graph()
         
@@ -22,7 +23,11 @@ class NetworkTopologyGenerator:
             graph.add_node(i)
             
         # Максимальная реберная связность
-        max_edges = int((num_nodes - 1) / 2)
+        # не кол-во ребер
+        max_edge_connectivity = int((num_nodes - 1) / 2)
+        
+        # Максимальное количество ребер
+        max_total_edges = num_nodes * 2
         
         # создаем минимальное дерево
         nodes_list = list(range(num_nodes))
@@ -37,26 +42,54 @@ class NetworkTopologyGenerator:
         # Добавляем дополнительные ребра для увеличения связности
         # но не превышая max_edges
         attempts = 0
-        max_attempts = num_nodes * num_nodes
+        max_attempts = num_nodes * num_nodes * 2
         
+        # Если мосты запрещены, сначала устраняем все мосты
+        if not allow_bridges:
+            while attempts < max_attempts and not NetworkTopologyGenerator.has_no_bridges(graph):
+                attempts += 1
+                
+                # Проверяем не превысили ли лимит ребер
+                if graph.number_of_edges() >= max_total_edges:
+                    break
+                
+                # Выбираем случайную пару узлов
+                u, v = random.sample(nodes_list, 2)
+                
+                if not graph.has_edge(u, v):
+                    # Добавляем ребро для устранения мостов
+                    graph.add_edge(u, v)
+                    
+        # Добавляем еще ребер, контролируя реберную связность
+        attempts = 0
         while attempts < max_attempts:
             attempts += 1
             
-            # Проверяем реберную связность
-            if graph.number_of_edges() >= max_edges:
+            # Проверяем реберную связность и количество ребер
+            try:
+                current_connectivity = nx.edge_connectivity(graph)
+                if current_connectivity >= max_edge_connectivity:
+                    break
+            except:
+                pass
+                
+            if graph.number_of_edges() >= max_total_edges:
                 break
                 
             # Выбираем случайную пару узлов
             u, v = random.sample(nodes_list, 2)
             
             if not graph.has_edge(u, v):
-                # Проверяем, не создаст ли это ребро мост
-                test_graph = graph.copy()
-                test_graph.add_edge(u, v)
-                
-                # Проверяем отсутствие мостов
-                if NetworkTopologyGenerator.has_no_bridges(test_graph):
+                if allow_bridges:
+                    # Просто добавляем ребро
                     graph.add_edge(u, v)
+                else:
+                    # Добавляем только если не создаст новых мостов
+                    test_graph = graph.copy()
+                    test_graph.add_edge(u, v)
+                    
+                    if NetworkTopologyGenerator.has_no_bridges(test_graph):
+                        graph.add_edge(u, v)
                     
         return graph
     

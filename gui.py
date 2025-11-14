@@ -34,6 +34,15 @@ class DSRSimulatorGUI:
         nodes_entry = ttk.Entry(control_frame, textvariable=self.nodes_var, width=10)
         nodes_entry.pack(side=tk.LEFT, padx=5)
         
+        # Checkbox для мостов
+        self.allow_bridges_var = tk.BooleanVar(value=False)
+        bridges_check = ttk.Checkbutton(
+            control_frame, 
+            text="Разрешить мосты",
+            variable=self.allow_bridges_var
+        )
+        bridges_check.pack(side=tk.LEFT, padx=5)
+        
         ttk.Button(
             control_frame, 
             text="Создать топологию", 
@@ -145,11 +154,15 @@ class DSRSimulatorGUI:
                 
             self.network.stop_nodes() # при создании новой топологии останавливаем текущую сеть
             
+            # Получаем настройку мостов
+            allow_bridges = self.allow_bridges_var.get()
+            
             # Создаем новую топологию
             self.add_log("=" * 60)
             self.add_log(f"Создание новой топологии с узлами, колличество: {num_nodes}")
+            self.add_log(f"Мосты: {'разрешены' if allow_bridges else 'запрещены'}")
             
-            self.network.create_topology(num_nodes)
+            self.network.create_topology(num_nodes, allow_bridges)
             
             # Запускаем создание узлов
             self.network.start_nodes()

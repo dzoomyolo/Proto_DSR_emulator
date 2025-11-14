@@ -26,13 +26,13 @@ class Network:
         self.paused = False
         self.found_route: Optional[List[int]] = None
         
-    def create_topology(self, num_nodes: int) -> bool:
+    def create_topology(self, num_nodes: int, allow_bridges: bool = False) -> bool:
         self.graph.clear()
         self.nodes.clear()
         self.found_route = None
         
         # Генерируем топологию
-        self.graph = NetworkTopologyGenerator.create_topology(num_nodes)
+        self.graph = NetworkTopologyGenerator.create_topology(num_nodes, allow_bridges)
         
         # Создаем узлы
         for i in range(num_nodes):
